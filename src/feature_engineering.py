@@ -85,3 +85,92 @@ class FeatureEngineer:
         self.df.drop(columns=columns, inplace=True)
         print(f"Columns {columns} dropped.")
         return self.df
+
+# ...existing code...
+    def normalize_features(self, columns: list, method: str = 'standard') -> pd.DataFrame:
+        """
+        Normalizes or scales numerical features.
+        
+        Parameters:
+        - columns: List of column names to scale.
+        - method: 'standard' (StandardScaler) or 'minmax' (MinMaxScaler).
+        """
+        from sklearn.preprocessing import StandardScaler, MinMaxScaler
+        
+        print(f"\n--- Normalizing Features ({method}) ---")
+        if method == 'standard':
+            scaler = StandardScaler()
+        elif method == 'minmax':
+            scaler = MinMaxScaler()
+        else:
+            raise ValueError("Method must be 'standard' or 'minmax'")
+            
+        # Check if columns exist
+        valid_cols = [col for col in columns if col in self.df.columns]
+        
+        if valid_cols:
+            self.df[valid_cols] = scaler.fit_transform(self.df[valid_cols])
+            print(f"Scaled columns: {valid_cols}")
+        else:
+            print("No valid columns found to scale.")
+            
+        return self.df
+
+    def apply_log_transform(self, columns: list) -> pd.DataFrame:
+        """
+        Applies log transformation (log1p) to specified columns to handle skewness.
+        """
+        import numpy as np
+        print(f"\n--- Applying Log Transformation ---")
+        valid_cols = [col for col in columns if col in self.df.columns]
+        
+        if not valid_cols:
+            print("No valid columns found to log transform.")
+            return self.df
+
+        for col in valid_cols:
+            # Ensure no negative values for log
+            if (self.df[col] < 0).any():
+                 print(f"Warning: Column {col} contains negative values. Skipping log transform.")
+                 continue
+            
+            self.df[col] = np.log1p(self.df[col])
+            print(f"Log transformed: {col}")
+            
+        return self.df
+
+    def encode_categorical_features(self, columns: list, method: str = 'onehot') -> pd.DataFrame:
+        """
+        Encodes categorical features.
+        
+        Parameters:
+        - columns: List of column names to encode.
+        - method: 'onehot', 'label', or 'frequency'.
+        """
+        print(f"\n--- Encoding Categorical Features ({method}) ---")
+        
+        valid_cols = [col for col in columns if col in self.df.columns]
+        
+        if not valid_cols:
+            print("No valid columns found to encode.")
+            return self.df
+
+        if method == 'onehot':
+            # pd.get_dummies is easier for DataFrames than sklearn OneHotEncoder
+            self.df = pd.get_dummies(self.df, columns=valid_cols, drop_first=True)
+            print(f"One-hot encoded: {valid_cols}")
+            
+        elif method == 'label':
+            from sklearn.preprocessing import LabelEncoder
+            le = LabelEncoder()
+            for col in valid_cols:
+                self.df[col] = le.fit_transform(self.df[col].astype(str))
+            print(f"Label encoded: {valid_cols}")
+
+        elif method == 'frequency':
+            for col in valid_cols:
+                freq_encoding = self.df[col].value_counts(normalize=True)
+                self.df[col] = self.df[col].map(freq_encoding)
+            print(f"Frequency encoded: {valid_cols}")
+            
+        return self.df
