@@ -47,10 +47,5 @@ def transform_ip_to_country(fraud_df: pd.DataFrame, ip_mapping_df: pd.DataFrame)
     # Drop the helper columns from ip_mapping_df
     merged_df = merged_df.drop(columns=['lower_bound_ip_address', 'upper_bound_ip_address'])
     
-    # Restore original order if needed? 
-    # merge_asof requires sorting, so original order is lost. 
-    # If index was meaningful, we could reset it, but usually for EDA it's fine.
-    # If we want to be safe, we could have preserved index.
-    # Let's just return the sorted dataframe.
     
     return merged_df
