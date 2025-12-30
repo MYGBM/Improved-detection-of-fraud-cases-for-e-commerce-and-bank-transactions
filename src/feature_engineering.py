@@ -157,7 +157,7 @@ class FeatureEngineer:
 
         if method == 'onehot':
             # pd.get_dummies is easier for DataFrames than sklearn OneHotEncoder
-            self.df = pd.get_dummies(self.df, columns=valid_cols, drop_first=True)
+            self.df = pd.get_dummies(self.df, columns=valid_cols, drop_first=True,dtype=int)
             print(f"One-hot encoded: {valid_cols}")
             
         elif method == 'label':
@@ -174,3 +174,82 @@ class FeatureEngineer:
             print(f"Frequency encoded: {valid_cols}")
             
         return self.df
+    
+    def cyclical_encode(self, columns: list, max_vals: dict) -> pd.DataFrame:
+        """
+        Applies cyclical encoding (sin/cos) to time-based features.
+        
+        Parameters:
+        - columns: List of columns to encode.
+        - max_vals: Dictionary mapping column name to its maximum cycle value 
+                    (e.g., {'hour': 24, 'day': 7}).
+        """
+        import numpy as np
+        print("\n--- Applying Cyclical Encoding ---")
+        
+        for col in columns:
+            if col not in self.df.columns:
+                print(f"Column {col} not found.")
+                continue
+            
+            max_val = max_vals.get(col)
+            if max_val is None:
+                print(f"Max value for {col} not provided.")
+                continue
+
+            # Create Sin and Cos features
+            self.df[f'{col}_sin'] = np.sin(2 * np.pi * self.df[col] / max_val)
+            self.df[f'{col}_cos'] = np.cos(2 * np.pi * self.df[col] / max_val)
+            
+            print(f"Encoded {col} -> {col}_sin, {col}_cos")
+            
+            # Drop the original column as it's no longer needed
+            self.df.drop(columns=[col], inplace=True)
+            
+        return self.df
+    
+    def check_feature_stats(self, columns: list, stage: str = "Current") -> None:
+        """
+        Prints descriptive statistics (mean, std, min, max) for specific columns
+        to help evaluate the effect of transformations.
+        """
+        print(f"\n--- Feature Statistics ({stage}) ---")
+        valid_cols = [col for col in columns if col in self.df.columns]
+        
+        if not valid_cols:
+            print("No valid columns found.")
+            return
+
+        stats = self.df[valid_cols].describe().T[['mean', 'std', 'min', 'max']]
+        print(stats)
+        
+    def plot_pre_post_distribution(self, original_df: pd.DataFrame, columns: list, isBefore: bool = True) -> None:
+        """
+        Plots the distribution of features before and after transformation.
+        """
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+
+        print("\n--- Plotting Pre vs Post Distributions ---")
+        
+        
+        for col in columns:
+            if col not in self.df.columns or col not in original_df.columns:
+                continue
+
+            plt.figure(figsize=(12, 5))
+            if isBefore:
+                # Plot Original (Before)
+                plt.subplot(1, 2, 1)
+                sns.histplot(original_df[col], kde=True, color='blue', bins=30)
+                plt.title(f'Before: {col} (Original)')
+                plt.xlabel('Value')
+            else:
+                # Plot Current (After)
+                plt.subplot(1, 2, 2)
+                sns.histplot(self.df[col], kde=True, color='green', bins=30)
+                plt.title(f'After: {col} (Transformed)')
+                plt.xlabel('Value (Scaled)')
+
+                plt.tight_layout()
+                plt.show()

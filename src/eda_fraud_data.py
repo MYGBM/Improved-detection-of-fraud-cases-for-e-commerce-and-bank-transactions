@@ -247,23 +247,5 @@ class Eda:
         plt.show()
 
         return counts
-    
-    # def eda_multivariate_heatmap(self, feature1: str, feature2: str, target: str = 'class', figsize: tuple = (12, 8)):
-    #     """
-    #     Creates a heatmap showing the fraud rate for combinations of two categorical features.
-    #     Useful for finding specific high-risk segments (e.g., Country=Unknown AND Source=Direct).
-    #     """
-    #     import seaborn as sns
-        
-    #     if feature1 not in self.df.columns or feature2 not in self.df.columns:
-    #         raise ValueError(f"Columns {feature1} or {feature2} not found")
-
-    #     # Calculate mean fraud rate for the cross-tabulation
-    #     pivot_table = self.df.pivot_table(index=feature1, columns=feature2, values=target, aggfunc='mean')
-        
-    #     plt.figure(figsize=figsize)
-    #     sns.heatmap(pivot_table, annot=True, fmt=".2f", cmap="Reds", cbar_kws={'label': 'Fraud Rate'})
-    #     plt.title(f'Fraud Rate Heatmap: {feature1} vs {feature2}')
-    #     plt.show()
 
 
