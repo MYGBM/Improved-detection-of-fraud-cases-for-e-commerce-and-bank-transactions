@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, precision_recall_curve, auc, f1_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold, cross_validate
 
 class FraudModel:
     def __init__(self):
@@ -39,6 +41,88 @@ class FraudModel:
         print("Model training completed.")
         return self.model
 
+    def train_random_forest(self, X_train, y_train, tune=False, param_dist=None, **kwargs):
+        """
+        Train a Random Forest model with optional hyperparameter tuning.
+        """
+        print("\n--- Training Random Forest ---")
+        
+        if tune:
+            print("Performing Hyperparameter Tuning (RandomizedSearchCV)...")
+            rf = RandomForestClassifier(random_state=42)
+            
+            if param_dist is None:
+                # Basic search space
+                param_dist = {
+                    'n_estimators': [50, 100, 200],
+                    'max_depth': [10, 20, 30, None],
+                    'min_samples_split': [2, 5, 10],
+                    'min_samples_leaf': [1, 2, 4]
+                }
+                
+            # Using f1 score for scoring as it balances precision and recall
+            search = RandomizedSearchCV(
+                estimator=rf,
+                param_distributions=param_dist,
+                n_iter=10, 
+                cv=3,
+                scoring='f1',
+                random_state=42,
+                n_jobs=-1,
+                verbose=1
+            )
+            search.fit(X_train, y_train)
+            self.model = search.best_estimator_
+            print(f"Best Parameters found: {search.best_params_}")
+        else:
+            # Train with provided kwargs or defaults
+            self.model = RandomForestClassifier(random_state=42, **kwargs)
+            self.model.fit(X_train, y_train)
+            
+        print("Model training completed.")
+        return self.model
+
+    def evaluate_with_cross_validation(self, X, y, n_splits=5):
+        """
+        Perform Stratified K-Fold Cross-Validation.
+        Returns a dataframe with the results.
+        """
+        print(f"\n--- Performing Stratified K-Fold Cross-Validation (K={n_splits}) ---")
+        
+        if self.model is None:
+            print("Model not trained yet. Please train a model first.")
+            return None
+
+        # Define the cross-validation strategy
+        skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+        
+        # Define metrics to evaluate
+        scoring = {
+            'accuracy': 'accuracy',
+            'precision': 'precision',
+            'recall': 'recall',
+            'f1': 'f1',
+            'roc_auc': 'roc_auc'
+        }
+        
+        # Run Cross-Validation
+        cv_results = cross_validate(self.model, X, y, cv=skf, scoring=scoring, n_jobs=-1)
+        
+        # Create a summary DataFrame
+        results_df = pd.DataFrame(cv_results)
+        
+        # Calculate Mean and Std
+        summary = pd.DataFrame({
+            'Metric': [k for k in scoring.keys()],
+            'Mean Score': [results_df[f'test_{k}'].mean() for k in scoring.keys()],
+            'Std Dev': [results_df[f'test_{k}'].std() for k in scoring.keys()]
+        })
+        
+        print("\nCross-Validation Results:")
+        print(summary)
+        
+        return summary
+
     def evaluate_model(self, X_test, y_test):
         """
         Evaluate the trained model using various metrics:
@@ -48,7 +132,7 @@ class FraudModel:
         - AUC-PR (Area Under the Precision-Recall Curve)
         """
         if self.model is None:
-            print("Model not trained yet. Please call train_logistic_regression first.")
+            print("Model not trained yet. Please call train_logistic_regression or train_random_forest first.")
             return
 
         print("\n--- Model Evaluation ---")
