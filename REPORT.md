@@ -76,14 +76,25 @@ During the analysis and engineering phase, I encountered and resolved several ch
     *   *Challenge*: The rarity of fraud cases meant a standard model would likely predict "No Fraud" for everything and achieve high accuracy but 0 recall.
     *   *Solution*: I implemented SMOTE on the training set only, preserving the test set's integrity for fair evaluation.
 
-## 4. Next Steps
+## 4. Model Building and Evaluation
 
-Following the successful preparation of the data, I will proceed to the next phases of the project:
+I implemented and compared two models: **Logistic Regression** (Baseline) and **Random Forest** (Advanced). I used **Stratified K-Fold Cross-Validation** to ensure stability and **AUC-PR** as the primary metric due to the class imbalance.
 
-*   **Task 2: Model Building and Training**
-    *   Train various machine learning models (e.g., Logistic Regression, Random Forest, XGBoost, CNN/RNN).
-    *   Tune hyperparameters to optimize for Recall and F1-Score (prioritizing fraud detection).
-    *   Evaluate models on the hold-out test set.
+### Results: E-Commerce Fraud Data (`Fraud_Data.csv`)
+*   **Logistic Regression**: High Recall (0.70) but very low Precision (0.17). It generates too many false alarms.
+*   **Random Forest**: Lower Recall (0.52) but near-perfect Precision (0.97).
+*   **Winner**: **Random Forest**.
+    *   *Reason*: A Precision of 0.17 is unacceptable for user experience (blocking 5 legitimate users for 1 fraudster). Random Forest is much safer for the business, and its Recall can be improved by adjusting the probability threshold.
+
+### Results: Credit Card Data (`creditcard.csv`)
+*   **Logistic Regression**: Excellent Recall (0.92) but abysmal Precision (0.06).
+*   **Random Forest**: High Recall (0.84) and High Precision (0.86). AUC-PR of **0.88**.
+*   **Winner**: **Random Forest**.
+    *   *Reason*: It achieved the "Sweet Spot" of high security and low friction. This is a production-ready model.
+
+## 5. Next Steps
+
+Following the successful modeling phase, I will proceed to the final phase:
 
 *   **Task 3: Model Explainability and Deployment**
     *   Use SHAP or LIME to explain model predictions (e.g., "Why was this transaction flagged?").
